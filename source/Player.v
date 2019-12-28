@@ -11,11 +11,11 @@ input clk, rst, player;
 input [1:0] state;
 input [1:0] keyboard;
 input [9:0] ballX;
-input [8:0] ballY;
+input [9:0] ballY;
 output wire [9:0] posX;
 output reg [8:0] posY;
 
-reg [16:0] counter, next_counter;
+reg [18:0] counter, next_counter;
 reg [8:0] nextPosY;
 
 assign posX = (player == 1'b1) ? 10'd614: 9'd0;
@@ -23,7 +23,7 @@ assign posX = (player == 1'b1) ? 10'd614: 9'd0;
 always @(posedge clk) begin
     if(rst==1'b1) begin
         posY <= 9'd232;
-        counter <= 17'd0;
+        counter <= 19'd0;
     end
     else begin
         posY <= nextPosY;
@@ -36,15 +36,15 @@ always @(*) begin
     case(state) 
         `START: begin
             nextPosY = 9'd232;
-            next_counter =17'd0;
+            next_counter =19'd0;
         end
         `DONE: begin
             nextPosY = 9'd232;
-            next_counter = 17'd0;
+            next_counter = 19'd0;
         end
         default: begin
             next_counter = counter + 1'b1;
-            if(counter==17'b1_1111_1111_1111_1111) begin
+            if(counter==19'b111_1111_1111_1111_1111) begin
                 if(keyboard==2'b01) begin
                     if(posY < 9'd424) begin
                         nextPosY = posY + 1'b1;
