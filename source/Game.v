@@ -8,13 +8,14 @@
 `define PLAYER2WIN 2'b10
 
 
-module Game(clk, rst, ballStatus, enter, state, score1, score2);
+module Game(clk, rst, ballStatus, enter, state, score1, score2, serve);
 
 input clk, rst;
 input [1:0] ballStatus;
 input enter;
 output reg [1:0] state;
 output reg [1:0] score1, score2;
+output reg serve;
 
 // score: 0-3
 
@@ -32,17 +33,24 @@ output reg [1:0] score1, score2;
 
 reg [1:0] nextState;
 reg [1:0] nextScore1, nextScore2;
+reg nextServe;
+
+// serve
+// 0: player1 serve
+// 1: player 2 serce
 
 always @(posedge clk) begin
     if(rst==1'b1) begin
         state <= `START;
         score1 <= 2'd0;
         score2 <= 2'd0;
+        serve <= 1'b0;
     end
     else begin
         state <= nextState;
         score1 <= nextScore1;
         score2 <= nextScore2;
+        serve <= nextServe;
     end
 end
 
@@ -52,10 +60,12 @@ always @(*) begin
             nextState = `SERVE;
             nextScore1 = 2'd0;
             nextScore2 = 2'd0;
+            nextServe = 1'b0;
         end
         `SERVE: begin
             nextScore1 = score1;
             nextScore2 = score2;
+            nextServe = serve;
             if(enter==1'b1) begin
                 nextState = `PLAY;
             end
@@ -66,11 +76,13 @@ always @(*) begin
         `PLAY: begin
             nextScore1 = score1;
             nextScore2 = score2;
+            nextServe = serve;
             if(ballStatus==`PLAYING) begin
                 nextState = `PLAY;
             end
             else if(ballStatus==`PLAYER1WIN) begin
                 nextScore1 = score1 + 1'b1;
+                nextServe = 1'b1;
                 if(nextScore1<2'd3) begin
                     nextState = `SERVE;
                 end
@@ -80,6 +92,7 @@ always @(*) begin
             end
             else begin
                 nextScore2 = score2 + 1'b1;
+                nextServe = 1'b0;
                 if(nextScore2<2'd3) begin
                     nextState = `SERVE;
                 end
@@ -91,6 +104,7 @@ always @(*) begin
         `DONE: begin
             nextScore1 = score1;
             nextScore2 = score2;
+            nextServe = 1'b0;
             if(enter==1'b1) begin
                 nextState = `START;
             end
