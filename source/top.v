@@ -20,27 +20,33 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module top(clk,rst,PS2Data,PS2Clk,vga_h_sync, vga_v_sync, vga_R, vga_G, vga_B);
+module top(clk,rst,PS2Data,PS2Clk,hsync, vsync, vgaRed, vgaGreen, vgaBlue);
+
+
 input clk;
-output vga_h_sync, vga_v_sync, vga_R, vga_G, vga_B;
+output hsync, vsync;
+output  [3:0] vgaRed;
+output  [3:0] vgaGreen;
+output  [3:0] vgaBlue;
 input rst;
 inout PS2Data;
 inout PS2Clk;
-
-wire inDisplayArea;
-wire [9:0] CounterX;
-wire [8:0] CounterY;
-
-hvsync_generator syncgen(.clk(clk), .vga_h_sync(vga_h_sync), .vga_v_sync(vga_v_sync), 
-  .inDisplayArea(inDisplayArea), .CounterX(CounterX), .CounterY(CounterY));
  reg ball_inX, ball_inY;
+ wire clk1;
  wire [9:0]ballX;
  wire [9:0]ballY;
  wire [9:0]posX1;
  wire [9:0]posX2;
  wire [8:0]posY1;
  wire [8:0]posY2;
- 
+ wire valid;
+ wire [9:0]h_cnt;
+ wire [9:0]v_cnt;
+ wire [511:0] key_down;
+wire [8:0] last_change;
+wire key_valid;
+
+ wire BouncingObject;
  KeyboardDecoder key_de (
 	  .key_down(key_down),
 	  .last_change(last_change),
@@ -50,17 +56,69 @@ hvsync_generator syncgen(.clk(clk), .vga_h_sync(vga_h_sync), .vga_v_sync(vga_v_s
 	  .rst(rst),
 	  .clk(clk)
   );
-  wire [511:0] key_down;
-	wire [8:0] last_change;
-	wire key_valid;
-wire up = (key_down[9'b0_0111_0101] && key_valid);
-wire down = (key_down[9'b0_0111_0010] && key_valid);
-wire W = (key_down[9'b0_0001_1101] && key_valid);
-wire S = (key_down[9'b0_0001_1011] && key_valid);
+pixel_gen pix1(
+   h_cnt,
+   clk1,
+   valid,
+   v_cnt,
+   ballX,
+   ballY,
+   posX1,
+   posX2,
+   posY1,
+   posY2,
+   vgaRed,
+   vgaGreen,
+   vgaBlue,
+   BouncingObject
+   );
+wire clk13;
+clock_divisor clock_divisor1(clk1, clk,clk13);
+vga_controller vga1
+(
+   clk1,
+   rst,
+   hsync,
+   vsync,
+   valid,
+   h_cnt,
+   v_cnt
+  );
+wire [1:0]state;
+wire [1:0]score1;
+wire [1:0]score2;
+
+wire up = (key_down[9'b0_0111_0101]  );
+wire down = (key_down[9'b0_0111_0010] );
+wire W = (key_down[9'b0_0001_1101] );
+wire S = (key_down[9'b0_0001_1011] );
+wire enter = (key_down[9'b0_0101_1010] );
 wire [1:0] keyboard1 = {up, down};
 wire [1:0] keyboard2 = {W, S};
 
-wire R = BouncingObject | ball | (CounterX[3] ^ CounterY[3]);
+wire de_enter;
+wire [1:0] de_keyboard1;
+wire [1:0] de_keyboard2;
+
+wire one_enter;
+wire [1:0] one_keyboard1;
+wire [1:0] one_keyboard2;
+Game game(clk, rst, 2'd0, one_enter, state, score1, score2);
+debounce d0(clk, keyboard1[1], de_keyboard1[1]);
+debounce d1(clk,keyboard1[0], de_keyboard1[0]);
+debounce d2(clk, keyboard2[1], de_keyboard2[1]);
+debounce d3(clk,keyboard2[0], de_keyboard2[0]);
+
+onepulse o0(clk1, de_keyboard1[1], one_keyboard1[1]);
+onepulse o1(clk1, de_keyboard1[0], one_keyboard1[0]);
+onepulse o2(clk1, de_keyboard2[1], one_keyboard2[1]);
+onepulse o3(clk1, de_keyboard2[0], one_keyboard2[0]);
+
+debounce d4(clk, enter, de_enter);
+onepulse o4(clk1, de_enter, one_enter);
+
+
+/*wire R = BouncingObject | ball | (CounterX[3] ^ CounterY[3]);
 wire G = BouncingObject | ball;
 wire B = BouncingObject | ball;
 
@@ -70,34 +128,35 @@ begin
 	vga_R <= R & inDisplayArea;
 	vga_G <= G & inDisplayArea;
 	vga_B <= B & inDisplayArea;
-end
-hvsync_generator h1(clk, vga_h_sync, vga_v_sync, inDisplayArea, CounterX, CounterY);
-Player player1(clk, rst, keyboard1, ballX, ballY, player, posX1, posY1);
-Player player2(clk, rst, keyboard2, ballX, ballY, player, posX2, posY2);
+end*/
+
+Player player1(clk, rst,state, de_keyboard2, ballX, ballY, 1'b0, posX1, posY1);
+Player player2(clk, rst,state, de_keyboard1, ballX, ballY, 1'b1, posX2, posY2);
  
-wire border =  (CounterY[8:3]==0) || (CounterY[8:3]==59);
-wire paddle1 = ((CounterX>=posX1+8) && (CounterX<=posX1+18) &&(CounterY>=posY1+8) && (CounterY<=posY1+48)) ;
+/*wire border =  (h_cnt[8:3]==0) || (h_cnt[8:3]==59);
+wire paddle1 = ((CounterX>=posX1+8) && (CounterX<=posX1+18) &&(h_cnt>=posY1+8) && (CounterY<=posY1+48)) ;
 wire paddle2 = ((CounterX>=posX2+8) && (CounterX<=posX2+18) &&(CounterY>=posY2+8) && (CounterY<=posY2+48)) ;
 wire BouncingObject = border | paddle1 | paddle2; // active if the border or paddle is redrawing itself
+*/
 
 reg ResetCollision;
-always @(posedge clk) ResetCollision <= (CounterY==500) & (CounterX==0);  // active only once for every video frame
+always @(posedge clk) ResetCollision <= (v_cnt==500) & (h_cnt==0);  // active only once for every video frame
 
 reg CollisionX1, CollisionX2, CollisionY1, CollisionY2;
-always @(posedge clk) if(ResetCollision) CollisionX1<=0; else if(BouncingObject & (CounterX==ballX   ) & (CounterY==ballY+ 8)) CollisionX1<=1;
-always @(posedge clk) if(ResetCollision) CollisionX2<=0; else if(BouncingObject & (CounterX==ballX+16) & (CounterY==ballY+ 8)) CollisionX2<=1;
-always @(posedge clk) if(ResetCollision) CollisionY1<=0; else if(BouncingObject & (CounterX==ballX+ 8) & (CounterY==ballY   )) CollisionY1<=1;
-always @(posedge clk) if(ResetCollision) CollisionY2<=0; else if(BouncingObject & (CounterX==ballX+ 8) & (CounterY==ballY+16)) CollisionY2<=1;
+always @(posedge clk) if(ResetCollision) CollisionX1<=0; else if(BouncingObject & (h_cnt==ballX   ) & (v_cnt==ballY+ 8)) CollisionX1<=1;
+always @(posedge clk) if(ResetCollision) CollisionX2<=0; else if(BouncingObject & (h_cnt==ballX+16) & (v_cnt==ballY+ 8)) CollisionX2<=1;
+always @(posedge clk) if(ResetCollision) CollisionY1<=0; else if(BouncingObject & (h_cnt==ballX+ 8) & (v_cnt==ballY   )) CollisionY1<=1;
+always @(posedge clk) if(ResetCollision) CollisionY2<=0; else if(BouncingObject & (h_cnt==ballX+ 8) & (v_cnt==ballY+16)) CollisionY2<=1;
+Ball ball1(clk, rst,state, CollisionX1, CollisionX2, CollisionY1, CollisionY2, ResetCollision, ballX, ballY);
 
-Ball ball1(clk, rst, CollisionX1, CollisionX2, CollisionY1, CollisionY2, ResetCollision, ballX, ballY);
+
+/*always @(posedge clk)
+if(ball_inX==0) ball_inX <= (h_cnt==ballX) & ball_inY; else ball_inX <= !(h_cnt==ballX+16);
 
 always @(posedge clk)
-if(ball_inX==0) ball_inX <= (CounterX==ballX) & ball_inY; else ball_inX <= !(CounterX==ballX+16);
-
-always @(posedge clk)
-if(ball_inY==0) ball_inY <= (CounterY==ballY); else ball_inY <= !(CounterY==ballY+16);
+if(ball_inY==0) ball_inY <= (v_cnt==ballY); else ball_inY <= !(v_cnt==ballY+16);
 
 wire ball = ball_inX & ball_inY;
   
-  
+  */
 endmodule
