@@ -39,7 +39,7 @@ inout PS2Clk;
  wire [9:0]posX2;
  wire [8:0]posY1;
  wire [8:0]posY2;
- wire valid;
+ wire valid;-
  wire [9:0]h_cnt;
  wire [9:0]v_cnt;
  wire [511:0] key_down;
@@ -56,6 +56,10 @@ wire key_valid;
 	  .rst(rst),
 	  .clk(clk)
   );
+wire [1:0]score1;
+wire [1:0]score2;
+wire [1:0]state;
+
 pixel_gen pix1(
    h_cnt,
    clk1,
@@ -67,6 +71,9 @@ pixel_gen pix1(
    posX2,
    posY1,
    posY2,
+   score1,
+   score2,
+   state,
    vgaRed,
    vgaGreen,
    vgaBlue,
@@ -84,9 +91,6 @@ vga_controller vga1
    h_cnt,
    v_cnt
   );
-wire [1:0]state;
-wire [1:0]score1;
-wire [1:0]score2;
 
 wire up = (key_down[9'b0_0111_0101]  );
 wire down = (key_down[9'b0_0111_0010] );
@@ -101,21 +105,15 @@ wire [1:0] de_keyboard1;
 wire [1:0] de_keyboard2;
 
 wire one_enter;
-wire [1:0] one_keyboard1;
-wire [1:0] one_keyboard2;
-Game game(clk, rst, 2'd0, one_enter, state, score1, score2);
+wire serve;
+wire [1:0]ballStatus;
+Game game(clk, rst, ballStatus, one_enter, state, score1, score2,serve);
 debounce d0(clk, keyboard1[1], de_keyboard1[1]);
 debounce d1(clk,keyboard1[0], de_keyboard1[0]);
 debounce d2(clk, keyboard2[1], de_keyboard2[1]);
 debounce d3(clk,keyboard2[0], de_keyboard2[0]);
-
-onepulse o0(clk1, de_keyboard1[1], one_keyboard1[1]);
-onepulse o1(clk1, de_keyboard1[0], one_keyboard1[0]);
-onepulse o2(clk1, de_keyboard2[1], one_keyboard2[1]);
-onepulse o3(clk1, de_keyboard2[0], one_keyboard2[0]);
-
 debounce d4(clk, enter, de_enter);
-onepulse o4(clk1, de_enter, one_enter);
+onepulse o4(clk, de_enter, one_enter);
 
 
 /*wire R = BouncingObject | ball | (CounterX[3] ^ CounterY[3]);
@@ -143,11 +141,11 @@ reg ResetCollision;
 always @(posedge clk) ResetCollision <= (v_cnt==500) & (h_cnt==0);  // active only once for every video frame
 
 reg CollisionX1, CollisionX2, CollisionY1, CollisionY2;
-always @(posedge clk) if(ResetCollision) CollisionX1<=0; else if(BouncingObject & (h_cnt==ballX   ) & (v_cnt==ballY+ 8)) CollisionX1<=1;
-always @(posedge clk) if(ResetCollision) CollisionX2<=0; else if(BouncingObject & (h_cnt==ballX+16) & (v_cnt==ballY+ 8)) CollisionX2<=1;
-always @(posedge clk) if(ResetCollision) CollisionY1<=0; else if(BouncingObject & (h_cnt==ballX+ 8) & (v_cnt==ballY   )) CollisionY1<=1;
-always @(posedge clk) if(ResetCollision) CollisionY2<=0; else if(BouncingObject & (h_cnt==ballX+ 8) & (v_cnt==ballY+16)) CollisionY2<=1;
-Ball ball1(clk, rst,state, CollisionX1, CollisionX2, CollisionY1, CollisionY2, ResetCollision, ballX, ballY);
+always @(posedge clk) if(ResetCollision) CollisionX1<=0; else if(BouncingObject & (h_cnt==ballX   ) & (v_cnt==ballY+ 4)) CollisionX1<=1;
+always @(posedge clk) if(ResetCollision) CollisionX2<=0; else if(BouncingObject & (h_cnt==ballX+8) & (v_cnt==ballY+ 4)) CollisionX2<=1;
+always @(posedge clk) if(ResetCollision) CollisionY1<=0; else if(BouncingObject & (h_cnt==ballX+ 4) & (v_cnt==ballY   )) CollisionY1<=1;
+always @(posedge clk) if(ResetCollision) CollisionY2<=0; else if(BouncingObject & (h_cnt==ballX+ 4) & (v_cnt==ballY+8)) CollisionY2<=1;
+Ball ball1(clk, rst,state,serve, 1'b0,1'b0,1'b0,1'b0, 1'b1, ballX, ballY,ballStatus);
 
 
 /*always @(posedge clk)
