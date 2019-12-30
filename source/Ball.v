@@ -85,32 +85,8 @@ always @(*) begin
             nextBallStatus = ballStatus;
             next_counter = counter + 1'b1;
 
-            if(counter==20'b1111_1111_1111_1111_1111) begin
+            if(counter==19'b111_1111_1111_1111_1111) begin
                 if(UpdateBallPosition) begin
-                    if(~(CollisionX1 & CollisionX2)) begin      // if collision on both X-sides, don't move in the X direction
-                        if(ball_dirX==1'b0) begin
-                            nextBallX = ballX + 1'b1;
-                        end
-                        else begin
-                            nextBallX = ballX - 1'b1;
-                        end
-                    end
-                    else begin
-                        nextBallX = ballX;
-                    end
-
-                    if(~(CollisionY1 & CollisionY2)) begin       // if collision on both Y-sides, don't move in the Y direction
-                        if(ball_dirY==1'b0) begin
-                            nextBallY = ballY + 1'b1;
-                        end
-                        else begin
-                            nextBallY = ballY - 1'b1;
-                        end
-                    end
-                    else begin
-                        nextBallY = ballY;
-                    end
-
                     if(CollisionX2==1'b1) begin
                         nextBall_dirX = 1'b1;
                     end
@@ -123,6 +99,30 @@ always @(*) begin
                     end
                     else begin
                         nextBall_dirY = 1'b0;
+                    end
+                
+                    if(~(CollisionX1 & CollisionX2)) begin      // if collision on both X-sides, don't move in the X direction
+                        if(nextBall_dirX==1'b0) begin
+                            nextBallX = ballX + 1'b1;
+                        end
+                        else begin
+                            nextBallX = ballX - 1'b1;
+                        end
+                    end
+                    else begin
+                        nextBallX = ballX;
+                    end
+
+                    if(~(CollisionY1 & CollisionY2)) begin       // if collision on both Y-sides, don't move in the Y direction
+                        if(nextBall_dirY==1'b0) begin
+                            nextBallY = ballY + 1'b1;
+                        end
+                        else begin
+                            nextBallY = ballY - 1'b1;
+                        end
+                    end
+                    else begin
+                        nextBallY = ballY;
                     end
                 end
                 else begin
@@ -158,7 +158,7 @@ always @(*) begin
             nextBall_dirX = 1'b0;
             nextBall_dirY = 1'b0;
             nextBallStatus = `PLAYING;
-            next_counter = 20'd0;
+            next_counter = 19'd0;
         end
     endcase
 end
