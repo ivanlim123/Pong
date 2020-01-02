@@ -30,6 +30,7 @@ reg nextBall_dirX, nextBall_dirY;
 reg [1:0] nextBallStatus;
 
 reg [18:0] counter, next_counter;
+reg [18:0] speed, next_speed;
 
 always @(posedge clk) begin
     if(rst==1'b1) begin
@@ -39,6 +40,7 @@ always @(posedge clk) begin
         ball_dirY <= 1'b0;
         ballStatus <= `PLAYING;
         counter <= 19'd0;
+        speed <= 19'b111_1111_1111_1111_1111;
     end
     else begin
         ballX <= nextBallX;
@@ -47,6 +49,7 @@ always @(posedge clk) begin
         ball_dirY <= nextBall_dirY;
         ballStatus <= nextBallStatus;
         counter <= next_counter;
+        speed <= next_speed;
     end
 end
 
@@ -59,12 +62,14 @@ always @(*) begin
             nextBall_dirY = 1'b0;
             nextBallStatus = `PLAYING;
             next_counter = 19'd0;
+            next_speed = 19'b111_1111_1111_1111_1111;
         end
         `SERVE: begin
             nextBallX = `ORIGINX;
             nextBallY = `ORIGINY;
             nextBallStatus = `PLAYING;
             next_counter = 19'd0;
+            next_speed = 19'b111_1111_1111_1111_1111;
             if(serve==1'b0) begin
                 nextBall_dirX = 1'b0;
                 nextBall_dirY = (ball_dirY == 1'b1) ? 1'b0 : 1'b1;
@@ -81,15 +86,29 @@ always @(*) begin
             nextBall_dirY = ball_dirY;
             nextBallStatus = ballStatus;
             next_counter = counter + 1'b1;
+            next_speed = speed;
 
             if(CollisionX1 & CollisionX2) begin
                 nextBall_dirX = ~ball_dirX;
             end
             else if(CollisionX2==1'b1) begin
                 nextBall_dirX = 1'b1;
+                if(speed>19'b111_0000_0000_0000_0000) begin
+                    next_speed = speed - 19'd10000;
+                end
+                else begin
+                    next_speed = speed;
+                end
+                
             end
             else if(CollisionX1==1'b1) begin
                 nextBall_dirX = 1'b0;
+                if(speed>19'b111_0000_0000_0000_0000) begin
+                    next_speed = speed - 19'd10000;
+                end
+                else begin
+                    next_speed = speed;
+                end
             end
             else begin
                 nextBall_dirX = ball_dirX;
@@ -108,7 +127,8 @@ always @(*) begin
                 nextBall_dirY = ball_dirY;
             end
 
-            if(counter==19'b111_1111_1111_1111_1111) begin
+            if(counter==speed) begin
+                next_counter = 19'd0;
                 if(ball_dirX==1'b0) begin
                     nextBallX = ballX + 1'b1;
                 end
@@ -146,6 +166,7 @@ always @(*) begin
             nextBall_dirY = 1'b0;
             nextBallStatus = `PLAYING;
             next_counter = 19'd0;
+            next_speed = speed;
         end
     endcase
 end
