@@ -45,6 +45,7 @@ inout PS2Clk;
  wire [511:0] key_down;
 wire [8:0] last_change;
 wire key_valid;
+wire [1:0] mode;
 
  wire BouncingObject;
  KeyboardDecoder key_de (
@@ -73,7 +74,6 @@ pixel_gen pix1(
    posY2,
    score1,
    score2,
-   state,
    vgaRed,
    vgaGreen,
    vgaBlue,
@@ -100,6 +100,14 @@ wire enter = (key_down[9'b0_0101_1010] );
 wire [1:0] keyboard1 = {up, down};
 wire [1:0] keyboard2 = {W, S};
 
+wire one = key_down[9'b0_0001_0110];
+wire two = key_down[9'b0_0001_1110];
+wire three = key_down[9'b0_0010_0110];
+wire four = key_down[9'b0_0010_0101];
+
+wire de_one, de_two, de_three, de_four;
+wire one_one, one_two, one_three, one_four;
+
 wire de_enter;
 wire [1:0] de_keyboard1;
 wire [1:0] de_keyboard2;
@@ -107,13 +115,25 @@ wire [1:0] de_keyboard2;
 wire one_enter;
 wire serve;
 wire [1:0]ballStatus;
-Game game(clk, rst, ballStatus, one_enter, state, score1, score2,serve);
+
 debounce d0(clk, keyboard1[1], de_keyboard1[1]);
 debounce d1(clk,keyboard1[0], de_keyboard1[0]);
 debounce d2(clk, keyboard2[1], de_keyboard2[1]);
 debounce d3(clk,keyboard2[0], de_keyboard2[0]);
 debounce d4(clk, enter, de_enter);
 onepulse o4(clk, de_enter, one_enter);
+
+debounce d11(clk, one, de_one);
+debounce d12(clk, two, de_two);
+debounce d13(clk, three, de_three);
+debounce d14(clk, four, de_four);
+
+onepulse o11(clk, de_one, one_one);
+onepulse o12(clk, de_two, one_two);
+onepulse o13(clk, de_three, one_three);
+onepulse o14(clk, de_four, one_four);
+
+wire [3:0] change = {one_one, one_two, one_three, one_four};
 
 
 /*wire R = BouncingObject | ball | (CounterX[3] ^ CounterY[3]);
@@ -127,8 +147,8 @@ begin
 	vga_B <= B & inDisplayArea;
 end*/
 
-Player player1(clk, rst,state, de_keyboard2, ballX, ballY, 1'b0, posX1, posY1);
-Player player2(clk, rst,state, de_keyboard1, ballX, ballY, 1'b1, posX2, posY2);
+Player player1(clk, rst, state, mode, de_keyboard2, ballY, 1'b0, posX1, posY1);
+Player player2(clk, rst, state, mode, de_keyboard1, ballY, 1'b1, posX2, posY2);
  
 /*wire border =  (h_cnt[8:3]==0) || (h_cnt[8:3]==59);
 wire paddle1 = ((CounterX>=posX1+8) && (CounterX<=posX1+18) &&(h_cnt>=posY1+8) && (CounterY<=posY1+48)) ;
@@ -151,7 +171,7 @@ always @(*)if(BouncingObject & (h_cnt==ballX+ 4) & (v_cnt==ballY   )) CollisionY
 always @(*)if(BouncingObject & (h_cnt==ballX+ 4) & (v_cnt==ballY+8)) CollisionY2=1;else CollisionY2=0;
 
 Ball ball(clk, rst, state, serve, CollisionX1, CollisionX2, CollisionY1, CollisionY2, ballX, ballY, ballStatus);
-
+Game game(clk, rst, ballStatus, change, one_enter, state, score1, score2,serve, mode);
 
 /*always @(posedge clk)
 if(ball_inX==0) ball_inX <= (h_cnt==ballX) & ball_inY; else ball_inX <= !(h_cnt==ballX+16);
