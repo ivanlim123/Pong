@@ -93,8 +93,8 @@ always @(*) begin
             end
             else if(CollisionX2==1'b1) begin
                 nextBall_dirX = 1'b1;
-                if(speed>19'b111_0000_0000_0000_0000) begin
-                    next_speed = speed - 19'd10000;
+                if(speed>19'b110_1111_1111_1111_1111) begin
+                    next_speed = speed - 19'd12500;
                 end
                 else begin
                     next_speed = speed;
@@ -103,8 +103,8 @@ always @(*) begin
             end
             else if(CollisionX1==1'b1) begin
                 nextBall_dirX = 1'b0;
-                if(speed>19'b111_0000_0000_0000_0000) begin
-                    next_speed = speed - 19'd10000;
+                if(speed>19'b110_1111_1111_1111_1111) begin
+                    next_speed = speed - 19'd12500;
                 end
                 else begin
                     next_speed = speed;
