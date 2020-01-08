@@ -149,14 +149,136 @@ onepulse o14(clk, de_four, one_four);
 Player player1(clk, rst, state, mode, de_keyboard2, ballY, 1'b0, posX1, posY1);
 Player player2(clk, rst, state, mode, de_keyboard1, ballY, 1'b1, posX2, posY2);
 
-always @(*)if(BouncingObject & (h_cnt==ballX   ) & (v_cnt==ballY+ 4)) CollisionX1=1'b1;else CollisionX1=1'b0;
-always @(*)if(BouncingObject & (h_cnt==ballX+8) & (v_cnt==ballY+ 4)) CollisionX2=1'b1;else CollisionX2=1'b0;
-always @(*)if(BouncingObject & (h_cnt==ballX+ 4) & (v_cnt==ballY   )) CollisionY1=1'b1;else CollisionY1=1'b0;
-always @(*)if(BouncingObject & (h_cnt==ballX+ 4) & (v_cnt==ballY+8)) CollisionY2=1'b1;else CollisionY2=1'b0;
+//always @(*)if(BouncingObject & (h_cnt==ballX   ) & (v_cnt==ballY+ 4)) CollisionX1=1'b1;else CollisionX1=1'b0;
+//always @(*)if(BouncingObject & (h_cnt==ballX+8) & (v_cnt==ballY+ 4)) CollisionX2=1'b1;else CollisionX2=1'b0;
+//always @(*)if(BouncingObject & (h_cnt==ballX+ 4) & (v_cnt==ballY   )) CollisionY1=1'b1;else CollisionY1=1'b0;
+//always @(*)if(BouncingObject & (h_cnt==ballX+ 4) & (v_cnt==ballY+8)) CollisionY2=1'b1;else CollisionY2=1'b0;
+
+reg enable1, enable2, enable3, enable4;
+reg next_enable1, next_enable2, next_enable3, next_enable4;
+
+reg enable5, enable6;
+reg next_enable5, next_enable6;
+
+wire direction = (enable5 | enable6) ? 1'b1 : 1'b0;
+wire enable = enable1 | enable2 | enable3 | enable4 | enable5 | enable6;
+
+reg [24:0] counter;
+wire [24:0] next_counter;
+
+always @(posedge clk) begin
+    if(rst==1'b1) begin
+        enable1 <= 1'b0;
+        enable2 <= 1'b0;
+        enable3 <= 1'b0;
+        enable4 <= 1'b0;
+        enable5 <= 1'b0;
+        enable6 <= 1'b0;
+    end
+    else begin
+        if(counter==25'b1111_1111_1111_1111_1111_1111_1) begin
+            enable1 <= 1'b0;
+            enable2 <= 1'b0;
+            enable3 <= 1'b0;
+            enable4 <= 1'b0;
+            enable5 <= 1'b0;
+            enable6 <= 1'b0;
+        end
+        else begin
+            enable1 <= next_enable1;
+            enable2 <= next_enable2;
+            enable3 <= next_enable3;
+            enable4 <= next_enable4;
+            enable5 <= next_enable5;
+            enable6 <= next_enable6;
+        end
+    end
+end
+
+always @(posedge clk) begin
+    if(rst==1'b1) begin
+        counter <= 25'd0;
+    end
+    else begin
+        counter <= next_counter;
+    end
+end
+
+assign next_counter = (enable==1'b1) ? (counter + 1'b1) : 25'd0;
+
+always @(*) begin
+    if(BouncingObject & (h_cnt==ballX   ) & (v_cnt==ballY+ 4)) begin
+        CollisionX1=1'b1;
+        next_enable1 = 1'b1;
+    end
+    else begin
+        CollisionX1=1'b0;
+        next_enable1 = enable1;
+    end
+end
+
+always @(*) begin
+    if(BouncingObject & (h_cnt==ballX+8) & (v_cnt==ballY+ 4)) begin
+        CollisionX2=1'b1;
+        next_enable2 = 1'b1;
+    end
+    else begin
+        CollisionX2=1'b0;
+        next_enable2 = enable2; 
+    end
+end
+
+always @(*) begin
+    if(BouncingObject & (h_cnt==ballX+ 4) & (v_cnt==ballY   )) begin
+        CollisionY1=1'b1;
+        next_enable3 = 1'b1;
+    end
+    else begin
+        CollisionY1=1'b0;
+        next_enable3 = enable3;
+    end
+end
+
+always @(*) begin
+    if((BouncingObject & (h_cnt==ballX+ 4) & (v_cnt==ballY+8))) begin
+        CollisionY2=1'b1;
+        next_enable4 = 1'b1;
+    end
+    else begin
+        CollisionY2=1'b0;
+        next_enable4 = enable4;
+    end
+end
+
+always @(*) begin
+    if(ballStatus==2'b01) begin
+        next_enable5 = 1'b1;
+    end
+    else begin
+        next_enable5 = enable5;
+    end
+end
+
+always @(*) begin
+    if(ballStatus==2'b10) begin
+        next_enable6 = 1'b1;
+    end
+    else begin
+        next_enable6 = enable6;
+    end
+end
 
 Ball ball(clk, rst, state, serve, CollisionX1, CollisionX2, CollisionY1, CollisionY2, ballX, ballY, ballStatus);
 Game game(clk, rst, ballStatus, change, one_enter, state, score1, score2,serve, mode);
 
-MusicTop mt (clk, rst, ballStatus, CollisionX1, CollisionX2, CollisionY1, CollisionY2, pmod_1, pmod_2, pmod_4);
+music_top mt (
+	clk,
+	rst,
+	enable,
+	direction,
+	pmod_1,
+	pmod_2,
+	pmod_4
+);
 
 endmodule
