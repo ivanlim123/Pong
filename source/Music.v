@@ -21,29 +21,32 @@ module Music (
 
 always @(*) begin
 	case (ibeatNum)		// 1/4 beat
-	   // no sound
-	   8'd0 : tone = `NM0;
-	
-	   //paddle
-		8'd1 : tone = `NM1;
-		8'd2 : tone = `NM1;
+		8'd0 : tone = `NM0;	//3
+        8'd1 : tone = `NM3;
+		8'd2 : tone = `NM3;
 		8'd3 : tone = `NM3;
 		8'd4 : tone = `NM3;
 		8'd5 : tone = `NM3;
-		
+		default : tone = `NM0;
+	endcase
+end
 
-		//border
-		8'd6 : tone = `ti;
-		8'd7 : tone = `e;
-		
-		//win
-		8'd8 : tone = `NM1;
-		8'd9: tone = `NM2;
-		8'd10 : tone = `NM3;
-		8'd11 : tone = `NM1;
-		8'd12 : tone = `NM3;
-		8'd13 : tone = `NM4;
-		
+endmodule
+
+module Music2 (
+	input [7:0] ibeatNum,	
+	output reg [31:0] tone
+);
+
+always @(*) begin
+	case (ibeatNum)		// 1/4 beat
+		8'd0 : tone = `NM0;	//3
+		8'd1 : tone = `NM1;
+		8'd2: tone = `NM2;
+		8'd3 : tone = `NM3;
+		8'd4 : tone = `NM1;
+		8'd5 : tone = `NM3;
+		8'd6 : tone = `NM4;
 		default : tone = `NM0;
 	endcase
 end
